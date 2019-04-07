@@ -1,17 +1,7 @@
 ## Redis
 
 
-* 5大数据类型
-
-1 string 一个value最大512m  
-2 hash  
-3 set string类型无需集合，是哈希表实现的，不能重复  
-4 list 底层是链表，按照插入顺序排序，可以添加元素到首尾  
-5 zset string类型有序集合，不能重复，每个元素带着一个double类型的分数  
-
-
-
-* 基本操作
+### 1.基本操作
 
 默认是16个库，下标从0开始  
 
@@ -35,10 +25,6 @@ flushdb 清空当前库
 
 flushall 清空所有库  
 
-
-
-
-
 exists k1 判断key存在 1是有0是没有   
 
 move k1 3 将k1移动到3号库  
@@ -49,7 +35,17 @@ EXPIRE k1 20 设置k120秒后过期，到期后被移除
 
 type k1 获取类型  
 
-DEL k1 删除  
+DEL k1 删除
+
+
+
+### 2.数据类型
+
+1 string 一个value最大512m  
+2 hash  
+3 set string类型无需集合，是哈希表实现的，不能重复  
+4 list 底层是链表，按照插入顺序排序，可以添加元素到首尾  
+5 zset string类型有序集合，不能重复，每个元素带着一个double类型的分数  
 
 
 * 字符串
@@ -245,16 +241,74 @@ ZRANGE zs1 0 -1
  ZREVRANGEBYSCORE zs1 90 10
  
  
- * 持久化 rdb aof
+### 3.持久化 rdb aof
  
  
  rdb: redis database  
  aof:append only file  
+ 允许同时存在，同时存在时，首先使用aof恢复
+ 
+ rdb:  
+        
+ save second changes  
+ 
+ 多少秒内 key有多少次改动  
+ 
+ flushall shutdown会生成新的dump.rdb，空文件，无意义
+ 
+ 
+ 禁用rdb: 注释掉save配置
+ 
+ 执行save bgsave命令，可以忽略配置，立刻备份，save只管保存，全部阻塞，数据无法写入，bgsave在后台处理备份
+ 
+ stop-writes-on-bgsave-error  后台保存时出错，前台停止写 默认yes   设置成no代表不在乎数据一致性  
+ 
+ rdbcompression 存储在磁盘中的快照，是否进行压缩，是的话，将采用lzf算法压缩  
+ 
+ 
+ 
+ aof:  
+ 
+ 使用日志记录写操作 ，只追加不改写
+ 
+ 配置文件设置 appendonly yes 就打开了aof持久化
+ 
+ aof文件出错，执行指令 redis-check-aof --fix appendonly.aof 进行修复  
+ 
+ 常见配置：  
+ 
+ 
+追写策略 appendfsync ：
+    
+always 同步持久化 发生数据改变就记录到磁盘，性能差但数据完整性好  
+everysec 出厂默认推荐，异步操作，每秒记录，如果一秒内宕机会丢数据  
+no
+    
+    
+重写策略：
+ 
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+     
+        
+aof采用文件追加，文件会越来越大，重写机制为了避免这种情况，当文件大小超过阈值，会被压缩，
+只保留可以恢复数据的最小指令集，也可以通过bgrewriteaof指令  
+
+redis会记录上次重写时的aof大小，默认配置是aof文件是上次重写后大小的一倍且文件大于64m时触发
+ 
+ 
+    no-appendfsync-on-rewrite 
+    
+重写时是否运用appendfsync，默认为no，保证数据的安全性
+ 
+ 
+总结：
+    1 rdb能在指定时间间隔进行数据存储，aof记录每次对服务器的写操作
+    2.只做缓存，可以不开启持久化
+    3.rdb更好备份，快速重启，不会有aof存在的潜在问题
     
  
- 
- 
- 
- 
- 
- 
+### 4.事务
+
+
+
