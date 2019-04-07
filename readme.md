@@ -245,29 +245,43 @@ ZRANGE zs1 0 -1
  
  
  rdb: redis database  
- aof:append only file  
+ aof: append only file  
+ 
  允许同时存在，同时存在时，首先使用aof恢复
  
- rdb:  
-        
- save second changes  
+ * rdb:  
+      
+ 配置：  
  
- 多少秒内 key有多少次改动  
+     1.save second changes  
+     多少秒内 key有多少次改动  
+     
+     2.stop-writes-on-bgsave-error  
+     后台保存时出错，前台停止写 默认yes   
+     设置成no代表不在乎数据一致性 
+     
+     3.禁用rdb: 注释掉save配置
+     
+     4.rdbcompression 
+     存储在磁盘中的快照，是否进行压缩，是的话，将采用lzf算法压缩 
+     
+     
+ 命令
  
- flushall shutdown会生成新的dump.rdb，空文件，无意义
+    1.flushall shutdown
+    会生成新的dump.rdb，空文件，无意义
+ 
+    2.save / bgsave
+    
+    可以忽略配置，立刻备份，save只管保存，全部阻塞，数据无法写入，bgsave在后台处理备份
+ 
+  
+ 
+  
  
  
- 禁用rdb: 注释掉save配置
  
- 执行save bgsave命令，可以忽略配置，立刻备份，save只管保存，全部阻塞，数据无法写入，bgsave在后台处理备份
- 
- stop-writes-on-bgsave-error  后台保存时出错，前台停止写 默认yes   设置成no代表不在乎数据一致性  
- 
- rdbcompression 存储在磁盘中的快照，是否进行压缩，是的话，将采用lzf算法压缩  
- 
- 
- 
- aof:  
+ * aof:  
  
  使用日志记录写操作 ，只追加不改写
  
@@ -275,17 +289,18 @@ ZRANGE zs1 0 -1
  
  aof文件出错，执行指令 redis-check-aof --fix appendonly.aof 进行修复  
  
- 常见配置：  
+ 
+常见配置：  
  
  
-追写策略 appendfsync ：
+1.追写策略 appendfsync ：
     
 always 同步持久化 发生数据改变就记录到磁盘，性能差但数据完整性好  
 everysec 出厂默认推荐，异步操作，每秒记录，如果一秒内宕机会丢数据  
 no
     
     
-重写策略：
+2.重写策略：
  
     auto-aof-rewrite-percentage 100
     auto-aof-rewrite-min-size 64mb
@@ -309,6 +324,27 @@ redis会记录上次重写时的aof大小，默认配置是aof文件是上次重
     
  
 ### 4.事务
+
+一次执行多个命令，本质是一组命令的集合，所有命令都会序列化，按顺序串行执行，不被其他命令插入
+
+可以实现在一个队列中，一次性顺序性排他性的执行一系列命令
+
+开启事务：multi
+提交事务：exec
+放弃事务：DISCARD
+
+redis只部分支持事务，过程中就出现错误的会导致全部失败，过程中不出现错误成功加入队列，但实际执行出错的，不会影响其他执行结果，
+
+watch监控
+
+* 补充，数据库的锁，解决高并发和一致性的冲突
+
+
+    悲观锁：表锁，认为每次拿数据都认为别人会修改，用于备份
+    
+    乐观锁：既保证高并发，又不锁整张表，不对表上锁，表字段加入版本号，根据版本号确定先后
+
+
 
 
 
