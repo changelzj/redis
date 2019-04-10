@@ -398,4 +398,6 @@ slave启动成功后，会发送一个sync指令，master接收到命令后存�
 
 定义：能够从后台监控主机是否故障，如果故障，用投票方式自动将某个从机转换为主机
 
-
+配置：
+1 新建配置文件  touch sentinel.conf  
+2. 编写配置文件，追加内容 （sentinel monitor 自定义名称 地址 端口 1代表）   sentinel monitor host6379 127.0.0.1 6379  1
